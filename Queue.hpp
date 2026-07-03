@@ -36,7 +36,13 @@
 	#include "Ensure.hpp"
 #else
 	#include <cassert>
-	#define ensure(condition, ...) assert((condition))
+	// Guard against Ensure.hpp having already been included under a path our
+	// __has_include checks above don't know about (e.g. vendored elsewhere as
+	// "3rdparty/Ensure.hpp") -- COMMONS_ENSURE_HPP is defined by Ensure.hpp
+	// itself, so this still catches that case even under an unknown filename.
+	#if !defined(COMMONS_ENSURE_HPP) && !defined(ensure)
+		#define ensure(condition, ...) assert((condition))
+	#endif
 #endif
 
 namespace thr {
