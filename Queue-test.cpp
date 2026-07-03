@@ -18,6 +18,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <thread>
 #include <future>
@@ -277,15 +278,32 @@ TEST_CASE( "queueCounter counts and resets independently of overflowCounter" ) {
 }
 
 TEST_CASE( "Overflow with a limit greater than one" ) {
+	// This used to push all 5 items in a tight loop with no synchronization, and assert a
+	// specific overflow count based on an unstated assumption about how the OS schedules
+	// the worker thread relative to those pushes -- flaky under load (confirmed: it can
+	// fail even with no other load at all), and the assumption in the old comment about
+	// *why* the count came out the way it did was itself inconsistent with the arithmetic.
+	// Make the interleaving deterministic instead: push item 1, then block the test thread
+	// until the worker has actually dequeued it and is busy on its 100ms "processing" sleep
+	// (signaled from inside the callback, not inferred from timing) before pushing the rest.
 	int count = 0;
-	Queue<int> queue1([&count](int datum){
+	std::promise<void> firstItemStarted;
+	std::future<void> firstItemStartedFuture = firstItemStarted.get_future();
+	std::atomic<bool> signaled = {false};
+
+	Queue<int> queue1([&](int datum){
+		if(!signaled.exchange(true))
+			firstItemStarted.set_value();
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		count += datum;
 	}, 3);
 
-	// First push is grabbed immediately by the idle worker; the next four pile up
-	// against a capacity of 3, so exactly two of them must overflow.
 	queue1.push(1);
+	firstItemStartedFuture.wait();
+
+	// The queue is now guaranteed empty (item 1 already dequeued) and the worker is busy
+	// for 100ms, so these 4 pushes fill a capacity-3 queue starting from empty: only the
+	// 4th of them (once the queue is already at capacity) overflows.
 	queue1.push(2);
 	queue1.push(4);
 	queue1.push(8);
@@ -293,7 +311,7 @@ TEST_CASE( "Overflow with a limit greater than one" ) {
 
 	queue1.wait();
 
-	CHECK(queue1.overflowCounter() == 2);
+	CHECK(queue1.overflowCounter() == 1);
 	CHECK(queue1.queueCounter() == 5);
 }
 
