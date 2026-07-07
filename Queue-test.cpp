@@ -29,7 +29,7 @@
 using namespace thr;
 
 TEST_CASE( "Create / destroy Queue" ) {
-	Queue<int>* queue1 = new Queue<int>([](int datum){
+	Queue<int>* queue1 = new Queue<int>([](int){
 	});
 
 	delete queue1;
@@ -37,7 +37,7 @@ TEST_CASE( "Create / destroy Queue" ) {
 
 TEST_CASE( "Disconnected queue" ) {
 	int count = 0;
-	Queue<int>* queue1 = new Queue<int>([&count](int datum){
+	Queue<int>* queue1 = new Queue<int>([&count](int){
 		count++;
 	});
 
@@ -143,7 +143,7 @@ TEST_CASE( "Long queue" ) {
 
 TEST_CASE( "Complicated create / destroy Queue" ) {
 	for(int index = 0; index < 100; ++index) {
-		Queue<int>* queue1 = new Queue<int>([](int datum){
+		Queue<int>* queue1 = new Queue<int>([](int){
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
 		});
@@ -159,7 +159,7 @@ TEST_CASE( "wait() must not hang when destroyed while worker is mid-callback" ) 
 	// thread is off executing workFunction (queue already empty, idle already false),
 	// the worker must still release any thread concurrently blocked in wait() before
 	// the worker thread (and the Queue's synchronization primitives) go away.
-	Queue<int>* queue1 = new Queue<int>([](int datum){
+	Queue<int>* queue1 = new Queue<int>([](int){
 		std::this_thread::sleep_for(std::chrono::milliseconds(200));
 	});
 
@@ -195,7 +195,7 @@ TEST_CASE( "wait() must not hang when destroyed while worker is mid-callback" ) 
 }
 
 TEST_CASE( "wait() returns immediately when nothing has ever been pushed" ) {
-	Queue<int> queue1([](int datum){});
+	Queue<int> queue1([](int){});
 
 	auto waiter = std::async(std::launch::async, [&queue1]{ queue1.wait(); });
 	CHECK(waiter.wait_for(std::chrono::milliseconds(200)) == std::future_status::ready);
@@ -217,7 +217,7 @@ TEST_CASE( "isFull() is always false for an unlimited queue" ) {
 	// that push() itself honors, so it always reported full for limit == 0.
 	std::promise<void> release;
 	std::shared_future<void> releaseFuture = release.get_future();
-	Queue<int> queue1([releaseFuture](int datum){ releaseFuture.wait(); }, 0);
+	Queue<int> queue1([releaseFuture](int){ releaseFuture.wait(); }, 0);
 
 	for(int i = 0; i < 10; ++i) queue1.push(i);
 	// Let the worker pick up the first item so the other 9 pile up in the deque.
@@ -234,7 +234,7 @@ TEST_CASE( "isFull() is always false for an unlimited queue" ) {
 TEST_CASE( "isFull()/hasWork()/queuedWork() reflect queued items, not in-flight work" ) {
 	std::promise<void> release;
 	std::shared_future<void> releaseFuture = release.get_future();
-	Queue<int> queue1([releaseFuture](int datum){ releaseFuture.wait(); }, 2);
+	Queue<int> queue1([releaseFuture](int){ releaseFuture.wait(); }, 2);
 
 	queue1.push(1);
 	// Let the worker grab item 1 (queue empties, worker blocks in the callback on
@@ -259,7 +259,7 @@ TEST_CASE( "isFull()/hasWork()/queuedWork() reflect queued items, not in-flight 
 }
 
 TEST_CASE( "queueCounter counts and resets independently of overflowCounter" ) {
-	Queue<int> queue1([](int datum){
+	Queue<int> queue1([](int){
 		std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	}, 1);
 
@@ -364,7 +364,7 @@ TEST_CASE( "Queue push() overhead (producer-side, isolated)" ) {
 	// backing container.
 	std::promise<void> release;
 	std::shared_future<void> releaseFuture = release.get_future();
-	Queue<int> queue1([releaseFuture](int datum){ releaseFuture.wait(); }, 0);
+	Queue<int> queue1([releaseFuture](int){ releaseFuture.wait(); }, 0);
 
 	queue1.push(0);
 	// Let the worker grab item 0 and park on releaseFuture.
@@ -386,7 +386,7 @@ TEST_CASE( "Queue push() overhead, bounded queue (producer-side, isolated)" ) {
 	// unlimited queue's, which periodically doubles (and copies) its backing storage.
 	std::promise<void> release;
 	std::shared_future<void> releaseFuture = release.get_future();
-	Queue<int> queue1([releaseFuture](int datum){ releaseFuture.wait(); }, 2);
+	Queue<int> queue1([releaseFuture](int){ releaseFuture.wait(); }, 2);
 
 	queue1.push(0);
 	// Let the worker grab item 0 and park on releaseFuture.
@@ -488,7 +488,7 @@ TEST_CASE( "Queue push()/drain round trip throughput" ) {
 	// empty/idle before the next sample - the measurement doesn't accumulate state
 	// across iterations.
 	constexpr int batchSize = 100;
-	Queue<int> queue1([](int datum){}, 0);
+	Queue<int> queue1([](int){}, 0);
 
 	BENCHMARK("push + drain a batch of 100 items") {
 		for(int i = 0; i < batchSize; ++i) queue1.push(i);
