@@ -1,5 +1,7 @@
 # Queue.hpp
 
+[API docs](https://lrmoorejr.github.io/queue/)
+
 A bounded, thread-safe producer/consumer work queue backed by a single background worker
 thread. Push items onto it from any thread; the worker thread calls your callback for each one,
 in FIFO order.
