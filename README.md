@@ -75,7 +75,7 @@ to terminate, so you get more than a generic "terminate called after throwing an
 ...". If your callback can throw in a way that's expected rather than a bug, catch it inside the
 callback itself.
 
-### Requirements on `T`
+### Requirements on T
 
 `T` must be move-constructible and move-assignable (checked with a `static_assert`, so passing
 a type that isn't gives an immediate, readable compile error rather than a template-instantiation
