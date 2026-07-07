@@ -1,0 +1,30 @@
+# Minimal Doxygen config for Queue.hpp. Undocumented settings fall back to
+# Doxygen's built-in defaults -- see https://www.doxygen.nl/manual/config.html.
+
+PROJECT_NAME           = "Queue"
+PROJECT_BRIEF           = "A bounded, thread-safe producer/consumer work queue backed by a background worker thread"
+
+OUTPUT_DIRECTORY       = docs
+INPUT                  = Queue.hpp README.md
+USE_MDFILE_AS_MAINPAGE = README.md
+
+RECURSIVE              = NO
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+JAVADOC_AUTOBRIEF      = YES
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_PATH_NAMES        = NO
+SOURCE_BROWSER         = NO
+
+GENERATE_LATEX         = NO
+GENERATE_XML           = NO
+GENERATE_MAN           = NO
+GENERATE_RTF           = NO
+
+QUIET                  = NO
+WARN_IF_UNDOCUMENTED   = NO
